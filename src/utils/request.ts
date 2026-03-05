@@ -34,7 +34,7 @@ const clearAuthCache = () => {
 // 请求拦截器
 service.interceptors.request.use(
   (config) => {
-    // 添加租户 ID（芋道框架必需）
+    // 添加租户 ID（项目框架必需）
     config.headers['tenant-id'] = '1'
 
     // 添加 token
@@ -60,7 +60,7 @@ service.interceptors.response.use(
 
     const res = response.data || {}
 
-    // 芋道框架响应格式: { code: 0, data: any, msg: string }
+    // 项目框架响应格式: { code: 0, data: any, msg: string }
     // code === 0 表示成功
     if (res.code !== 0) {
       // 401: Token 过期

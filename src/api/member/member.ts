@@ -41,7 +41,7 @@ interface MemberUserRecord {
   groupId?: number
 }
 
-const DEFAULT_AVATAR = 'https://static.iocoder.cn/ruoyi-vue-pro-logo.png'
+const DEFAULT_AVATAR = 'https://static.pharmacy.cn/pharmacy-server-logo.png'
 
 const formatDateTime = (value?: string | number) => {
   if (value === undefined || value === null || value === '') {
