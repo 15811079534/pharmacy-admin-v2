@@ -1,0 +1,92 @@
+:root {
+  --el-color-primary: #0891b2;
+  --el-color-primary-light-3: #34a8c0;
+  --el-color-primary-light-5: #6bbfce;
+  --el-color-primary-light-7: #9ed6dd;
+  --el-color-primary-light-8: #bee4e8;
+  --el-color-primary-light-9: #def2f4;
+  --el-color-success: #059669;
+  --el-color-warning: #d97706;
+  --el-color-danger: #dc2626;
+  --el-border-radius-base: 12px;
+  --el-border-radius-small: 8px;
+  --el-border-color: #d4f1f5;
+  --el-border-color-light: #e3f6f9;
+  --el-border-color-lighter: #eef9fb;
+  --el-text-color-primary: #164e63;
+  --el-text-color-regular: #2f6579;
+  --el-text-color-secondary: #5f8ea2;
+  --el-fill-color-light: #f7fdff;
+  --el-bg-color-page: #f4fbfd;
+  --el-box-shadow-light: 0 10px 28px rgba(8, 145, 178, 0.08);
+}
+
+.el-button + .el-button {
+  margin-left: 10px;
+}
+
+.el-button {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.el-button--primary {
+  box-shadow: 0 10px 18px rgba(8, 145, 178, 0.2);
+}
+
+.el-form-item {
+  margin-bottom: 18px;
+}
+
+.el-input__wrapper,
+.el-textarea__inner,
+.el-select__wrapper,
+.el-date-editor.el-input__wrapper {
+  box-shadow: inset 0 0 0 1px #d6edf2;
+  border-radius: 10px;
+}
+
+.el-input__wrapper:hover,
+.el-select__wrapper:hover,
+.el-date-editor.el-input__wrapper:hover {
+  box-shadow: inset 0 0 0 1px #89cad6;
+}
+
+.el-card {
+  border: 1px solid #d6edf2;
+  box-shadow: 0 8px 24px rgba(14, 115, 149, 0.08);
+  border-radius: 18px;
+}
+
+.el-table {
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.el-table th.el-table__cell {
+  background: linear-gradient(135deg, #f2fbfd, #ecf8fb);
+  color: #256178;
+  font-weight: 700;
+}
+
+.el-table td.el-table__cell {
+  border-bottom-color: #edf6f9;
+}
+
+.el-table--enable-row-hover .el-table__body tr:hover > td.el-table__cell {
+  background: rgba(8, 145, 178, 0.06);
+}
+
+.el-pagination {
+  margin-top: 18px;
+}
+
+.el-dialog {
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.el-drawer {
+  border-top-left-radius: 18px;
+  border-bottom-left-radius: 18px;
+}
