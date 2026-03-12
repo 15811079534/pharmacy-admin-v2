@@ -97,7 +97,7 @@ const loadExpressList = async () => {
   try {
     expressList.value = await OrderApi.getExpressCompanyList()
     if (!expressList.value.length) {
-      ElMessage.warning('未配置物流公司，请先在后端维护物流公司')
+      ElMessage.warning('未配置物流公司，请先前往订单管理-物流公司创建')
     }
   } catch (error) {
     ElMessage.error('获取物流公司失败')

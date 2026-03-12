@@ -4,6 +4,7 @@ export interface GoodsVO {
   id?: number
   name: string
   categoryId: number
+  brandId?: number
   categoryName?: string
   image: string
   images?: string[]
@@ -116,6 +117,7 @@ const mapGoods = (item: ProductSpuRecord, categoryNameMap: Record<number, string
   id: item.id,
   name: item.name || '',
   categoryId: item.categoryId || 0,
+  brandId: item.brandId ? Number(item.brandId) : undefined,
   categoryName: item.categoryId ? categoryNameMap[item.categoryId] || '' : '',
   image: item.picUrl || '',
   images: item.sliderPicUrls || [],
@@ -201,7 +203,7 @@ const resolveValidCategoryId = async (categoryId?: number) => {
   if (meta.firstLeafId) {
     return meta.firstLeafId
   }
-  throw new Error('未找到可用的叶子分类，请先在后端配置至少一个二级分类')
+  throw new Error('未找到可用的二级分类，请先在药品分类中创建至少一个二级分类')
 }
 
 const getDefaultBrandId = async () => {
@@ -213,7 +215,7 @@ const getDefaultBrandId = async () => {
   })
   const first = list?.[0]
   if (!first) {
-    throw new Error('请先在后端创建至少一个商品品牌后再新增或编辑药品')
+    throw new Error('未找到可用品牌，请先在商品品牌中创建并启用至少一个品牌')
   }
   defaultBrandIdCache = first.id
   return defaultBrandIdCache
@@ -242,7 +244,10 @@ const buildSkuPayload = (goods: GoodsVO, detail?: ProductSpuRecord) => {
 }
 
 const buildSavePayload = async (goods: GoodsVO, detail?: ProductSpuRecord) => {
-  const brandId = detail?.brandId ?? (await getDefaultBrandId())
+  const brandId = Number(goods.brandId ?? detail?.brandId ?? (await getDefaultBrandId()))
+  if (!brandId) {
+    throw new Error('请选择商品品牌')
+  }
   const categoryId = await resolveValidCategoryId(goods.categoryId || detail?.categoryId)
   return {
     id: detail?.id || goods.id,

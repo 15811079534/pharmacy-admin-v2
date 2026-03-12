@@ -55,10 +55,12 @@ declare module 'vue' {
     ElTimelineItem: typeof import('element-plus/es')['ElTimelineItem']
     ElUpload: typeof import('element-plus/es')['ElUpload']
     HelloWorld: typeof import('./../components/HelloWorld.vue')['default']
+    LazyImage: typeof import('./../components/LazyImage.vue')['default']
     PageHero: typeof import('./../components/PageHero.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     TrendChart: typeof import('./../components/TrendChart.vue')['default']
+    VirtualList: typeof import('./../components/VirtualList.vue')['default']
   }
   export interface GlobalDirectives {
     vLoading: typeof import('element-plus/es')['ElLoadingDirective']

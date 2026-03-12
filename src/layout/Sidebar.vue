@@ -25,14 +25,15 @@
           <template #title>运营总览</template>
         </el-menu-item>
 
-        <el-sub-menu index="goods">
+        <el-sub-menu v-if="canGoodsMenu" index="goods">
           <template #title>
             <el-icon><Goods /></el-icon>
             <span>药品管理</span>
           </template>
-          <el-menu-item index="/goods/category">药品分类</el-menu-item>
-          <el-menu-item index="/goods/goods">药品信息</el-menu-item>
-          <el-menu-item index="/goods/stock">库存管理</el-menu-item>
+          <el-menu-item v-if="canGoodsCategory" index="/goods/category">药品分类</el-menu-item>
+          <el-menu-item v-if="canGoodsBrand" index="/goods/brand">商品品牌</el-menu-item>
+          <el-menu-item v-if="canGoodsSpu" index="/goods/goods">药品信息</el-menu-item>
+          <el-menu-item v-if="canGoodsSpu" index="/goods/stock">库存管理</el-menu-item>
         </el-sub-menu>
 
         <el-sub-menu index="order">
@@ -43,6 +44,7 @@
           <el-menu-item index="/order/order">订单列表</el-menu-item>
           <el-menu-item index="/order/aftersale">售后管理</el-menu-item>
           <el-menu-item index="/order/logistics">物流管理</el-menu-item>
+          <el-menu-item v-if="canOrderExpress" index="/order/express">物流公司</el-menu-item>
         </el-sub-menu>
 
         <el-sub-menu index="pharmacy">
@@ -50,15 +52,19 @@
             <el-icon><FirstAidKit /></el-icon>
             <span>医疗业务</span>
           </template>
-          <el-menu-item index="/pharmacy/prescription">处方管理</el-menu-item>
-          <el-menu-item index="/pharmacy/store">门店管理</el-menu-item>
+          <el-menu-item v-if="canPrescription" index="/pharmacy/prescription">处方管理</el-menu-item>
+          <el-menu-item v-if="canStore" index="/pharmacy/store">门店管理</el-menu-item>
           <el-menu-item index="/pharmacy/insurance">医保管理</el-menu-item>
         </el-sub-menu>
 
-        <el-menu-item index="/member/member">
-          <el-icon><User /></el-icon>
-          <template #title>会员管理</template>
-        </el-menu-item>
+        <el-sub-menu v-if="canMemberMenu" index="member">
+          <template #title>
+            <el-icon><User /></el-icon>
+            <span>会员管理</span>
+          </template>
+          <el-menu-item v-if="canMemberList" index="/member/member">会员列表</el-menu-item>
+          <el-menu-item v-if="canMemberLevel" index="/member/level">会员等级</el-menu-item>
+        </el-sub-menu>
 
         <el-sub-menu index="marketing">
           <template #title>
@@ -82,6 +88,8 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAppStore } from '@/stores/app'
+import { useUserStore } from '@/stores/user'
+import { hasPermission } from '@/utils/permission'
 import {
   DataAnalysis,
   Goods,
@@ -93,8 +101,29 @@ import {
 
 const route = useRoute()
 const appStore = useAppStore()
+const userStore = useUserStore()
 
 const activeMenu = computed(() => route.path)
+const canGoodsCategory = computed(() =>
+  hasPermission(userStore.permissions, 'product:category:query')
+)
+const canGoodsBrand = computed(() => hasPermission(userStore.permissions, 'product:brand:query'))
+const canGoodsSpu = computed(() => hasPermission(userStore.permissions, 'product:spu:query'))
+const canGoodsMenu = computed(
+  () => canGoodsCategory.value || canGoodsBrand.value || canGoodsSpu.value
+)
+const canOrderExpress = computed(() =>
+  hasPermission(userStore.permissions, 'trade:delivery:express:query')
+)
+const canPrescription = computed(() =>
+  hasPermission(userStore.permissions, 'trade:prescription:query')
+)
+const canStore = computed(() =>
+  hasPermission(userStore.permissions, 'trade:pharmacy-store:query')
+)
+const canMemberList = computed(() => hasPermission(userStore.permissions, 'member:user:query'))
+const canMemberLevel = computed(() => hasPermission(userStore.permissions, 'member:level:query'))
+const canMemberMenu = computed(() => canMemberList.value || canMemberLevel.value)
 </script>
 
 <style scoped lang="scss">

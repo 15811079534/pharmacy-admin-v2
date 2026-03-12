@@ -1,7 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 import AppLayout from '@/layout/AppLayout.vue'
+import { hasPermission } from '@/utils/permission'
 
 // 基础路由
 export const constantRoutes: RouteRecordRaw[] = [
@@ -22,24 +24,42 @@ export const constantRoutes: RouteRecordRaw[] = [
         component: () => import('@/views/home/index.vue'),
         meta: { title: '首页' }
       },
+      {
+        path: 'system/profile',
+        name: 'SystemProfile',
+        component: () => import('@/views/system/profile/index.vue'),
+        meta: { title: '个人中心' }
+      },
+      {
+        path: 'system/password',
+        name: 'SystemPassword',
+        component: () => import('@/views/system/password/index.vue'),
+        meta: { title: '修改密码' }
+      },
       // 药品管理
       {
         path: 'goods/category',
         name: 'GoodsCategory',
         component: () => import('@/views/goods/category/index.vue'),
-        meta: { title: '药品分类' }
+        meta: { title: '药品分类', permission: 'product:category:query' }
+      },
+      {
+        path: 'goods/brand',
+        name: 'GoodsBrand',
+        component: () => import('@/views/goods/brand/index.vue'),
+        meta: { title: '商品品牌', permission: 'product:brand:query' }
       },
       {
         path: 'goods/goods',
         name: 'GoodsGoods',
         component: () => import('@/views/goods/goods/index.vue'),
-        meta: { title: '药品信息' }
+        meta: { title: '药品信息', permission: 'product:spu:query' }
       },
       {
         path: 'goods/stock',
         name: 'GoodsStock',
         component: () => import('@/views/goods/stock/index.vue'),
-        meta: { title: '库存管理' }
+        meta: { title: '库存管理', permission: 'product:spu:query' }
       },
       // 订单管理
       {
@@ -60,18 +80,24 @@ export const constantRoutes: RouteRecordRaw[] = [
         component: () => import('@/views/order/logistics/index.vue'),
         meta: { title: '物流管理' }
       },
+      {
+        path: 'order/express',
+        name: 'OrderExpress',
+        component: () => import('@/views/order/express/index.vue'),
+        meta: { title: '物流公司', permission: 'trade:delivery:express:query' }
+      },
       // 医疗业务
       {
         path: 'pharmacy/prescription',
         name: 'PharmacyPrescription',
         component: () => import('@/views/pharmacy/prescription/index.vue'),
-        meta: { title: '处方管理' }
+        meta: { title: '处方管理', permission: 'trade:prescription:query' }
       },
       {
         path: 'pharmacy/store',
         name: 'PharmacyStore',
         component: () => import('@/views/pharmacy/store/index.vue'),
-        meta: { title: '门店管理' }
+        meta: { title: '门店管理', permission: 'trade:pharmacy-store:query' }
       },
       {
         path: 'pharmacy/insurance',
@@ -84,7 +110,13 @@ export const constantRoutes: RouteRecordRaw[] = [
         path: 'member/member',
         name: 'MemberMember',
         component: () => import('@/views/member/member/index.vue'),
-        meta: { title: '会员列表' }
+        meta: { title: '会员列表', permission: 'member:user:query' }
+      },
+      {
+        path: 'member/level',
+        name: 'MemberLevel',
+        component: () => import('@/views/member/level/index.vue'),
+        meta: { title: '会员等级', permission: 'member:level:query' }
       },
       // 营销管理
       {
@@ -115,10 +147,16 @@ router.beforeEach((to) => {
   if (to.path === '/login') {
     return true
   }
-  if (userStore.token) {
-    return true
+  if (!userStore.token) {
+    return '/login'
   }
-  return '/login'
+
+  const requiredPermission = String(to.meta?.permission || '')
+  if (requiredPermission && !hasPermission(userStore.permissions, requiredPermission)) {
+    ElMessage.warning(`当前角色缺少访问权限：${requiredPermission}`)
+    return '/home'
+  }
+  return true
 })
 
 export default router

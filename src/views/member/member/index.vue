@@ -16,9 +16,12 @@
         </el-form-item>
         <el-form-item label="会员等级">
           <el-select v-model="queryParams.levelId" placeholder="请选择会员等级" clearable>
-            <el-option label="普通会员" :value="1" />
-            <el-option label="银卡会员" :value="2" />
-            <el-option label="金卡会员" :value="3" />
+            <el-option
+              v-for="item in levelOptions"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+            />
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -72,6 +75,7 @@
 import { computed } from 'vue'
 import { useTable } from '@/hooks/useTable'
 import * as MemberApi from '@/api/member/member'
+import * as MemberLevelApi from '@/api/member/level'
 import type { MemberPageReqVO } from '@/api/member/member'
 import PageHero from '@/components/PageHero.vue'
 import MemberForm from './MemberForm.vue'
@@ -80,6 +84,7 @@ import MemberDetail from './MemberDetail.vue'
 const queryFormRef = ref()
 const formRef = ref()
 const detailRef = ref()
+const levelOptions = ref<Array<{ value: number; label: string }>>([])
 
 const queryParams = reactive<MemberPageReqVO>({
   nickname: '',
@@ -94,6 +99,11 @@ const { loading, tableData, total, getList, handleQuery, handleReset } = useTabl
   queryParams
 })
 
+const highestLevel = computed<{ value: number; label: string }>(() => {
+  const sorted = [...levelOptions.value].sort((a, b) => b.value - a.value)
+  return sorted[0] || { value: 3, label: '等级 3' }
+})
+
 const heroStats = computed(() => {
   const balanceSum = tableData.value.reduce((sum, item) => sum + Number(item.balance || 0), 0)
   return [
@@ -104,9 +114,9 @@ const heroStats = computed(() => {
       tone: 'primary'
     },
     {
-      label: '金卡会员',
-      value: tableData.value.filter((item) => item.levelId === 3).length,
-      helper: '当前页',
+      label: '最高等级会员',
+      value: tableData.value.filter((item) => item.levelId === highestLevel.value.value).length,
+      helper: highestLevel.value.label,
       tone: 'success'
     },
     {
@@ -141,7 +151,19 @@ const handleSuccess = () => {
   getList()
 }
 
+const loadLevelOptions = async () => {
+  try {
+    const list = await MemberLevelApi.getMemberLevelSimpleList()
+    levelOptions.value = list.map((item) => ({
+      value: item.id,
+      label: item.name || `等级#${item.id}`
+    }))
+  } catch (error) {
+    ElMessage.warning('会员等级数据加载失败，筛选项可能不完整')
+  }
+}
+
 onMounted(() => {
-  getList()
+  Promise.all([loadLevelOptions(), getList()])
 })
 </script>

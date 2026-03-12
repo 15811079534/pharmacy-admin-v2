@@ -58,8 +58,6 @@
     </div>
   </div>
 
-  <UserProfileDialog ref="profileDialogRef" @success="handleProfileSuccess" />
-  <UpdatePasswordDialog ref="passwordDialogRef" />
 </template>
 
 <script setup lang="ts">
@@ -76,15 +74,11 @@ import {
 } from '@element-plus/icons-vue'
 import { useAppStore } from '@/stores/app'
 import { useUserStore } from '@/stores/user'
-import UserProfileDialog from './UserProfileDialog.vue'
-import UpdatePasswordDialog from './UpdatePasswordDialog.vue'
 
 const route = useRoute()
 const router = useRouter()
 const appStore = useAppStore()
 const userStore = useUserStore()
-const profileDialogRef = ref()
-const passwordDialogRef = ref()
 
 const isHome = computed(() => route.path === '/home')
 const pageTitle = computed(() => (route.meta.title as string) || '运营总览')
@@ -107,20 +101,13 @@ const toggleSidebar = () => {
   appStore.toggleSidebar()
 }
 
-const handleProfileSuccess = (payload: { nickname?: string; avatar?: string }) => {
-  userStore.setUserInfo({
-    ...(userStore.userInfo || {}),
-    ...payload
-  })
-}
-
 const handleCommand = async (command: string) => {
   switch (command) {
     case 'profile':
-      profileDialogRef.value?.open()
+      await router.push('/system/profile')
       break
     case 'password':
-      passwordDialogRef.value?.open()
+      await router.push('/system/password')
       break
     case 'logout':
       try {

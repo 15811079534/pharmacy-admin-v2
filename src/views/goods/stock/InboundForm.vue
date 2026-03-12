@@ -96,6 +96,9 @@ const open = async (goodsId?: number) => {
 
   try {
     goodsList.value = await StockApi.getGoodsList()
+    if (!goodsList.value.length) {
+      ElMessage.warning('暂无药品数据，请先前往药品管理-药品信息新增')
+    }
   } catch (error) {
     ElMessage.error('获取药品列表失败')
   }

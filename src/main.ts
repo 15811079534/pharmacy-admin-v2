@@ -1,7 +1,6 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
-import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import router from './router'
 import App from './App.vue'
 import './styles/index.scss'
@@ -16,9 +15,8 @@ app.use(pinia)
 // Router
 app.use(router)
 
-// Element Plus Icons
-for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
-  app.component(key, component)
-}
+// Element Plus Icons - 按需注册
+// 注意: 图标已通过 unplugin-vue-components 自动导入
+// 如需全局注册特定图标,请在此处添加
 
 app.mount('#app')

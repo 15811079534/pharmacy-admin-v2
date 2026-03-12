@@ -96,7 +96,8 @@ service.interceptors.response.use(
         clearAuthCache()
         location.href = '/login'
       } else if (status === 403) {
-        message = '没有权限访问'
+        const backendMsg = (error.response.data as any)?.msg
+        message = backendMsg || '没有权限访问，请联系管理员分配对应菜单权限'
       } else if (status === 500) {
         message = '服务器错误'
       } else {

@@ -32,6 +32,17 @@
         </el-col>
       </el-row>
 
+      <el-form-item label="商品品牌" prop="brandId">
+        <el-select v-model="formData.brandId" placeholder="请选择品牌" style="width: 100%">
+          <el-option
+            v-for="item in brandList"
+            :key="item.id"
+            :label="item.name"
+            :value="item.id"
+          />
+        </el-select>
+      </el-form-item>
+
       <el-row :gutter="20">
         <el-col :span="12">
           <el-form-item label="价格" prop="price">
@@ -99,8 +110,10 @@ import type { UploadRequestOptions } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import { useDialog } from '@/hooks/useDialog'
 import * as GoodsApi from '@/api/goods/goods'
+import * as BrandApi from '@/api/goods/brand'
 import * as CategoryApi from '@/api/goods/category'
 import type { GoodsVO } from '@/api/goods/goods'
+import type { BrandSimpleVO } from '@/api/goods/brand'
 import type { CategoryVO } from '@/api/goods/category'
 import { uploadFile } from '@/api/infra/file'
 
@@ -112,10 +125,12 @@ const { dialogVisible, dialogTitle, formType, formLoading, open, submit } = useD
 
 const formRef = ref()
 const categoryList = ref<Array<{ id: number; name: string }>>([])
+const brandList = ref<BrandSimpleVO[]>([])
 
 const formData = ref<GoodsVO>({
   name: '',
   categoryId: undefined as any,
+  brandId: undefined as any,
   image: '',
   price: 0,
   stock: 0,
@@ -130,6 +145,9 @@ const formRules = {
   ],
   categoryId: [
     { required: true, message: '请选择药品分类', trigger: 'change' }
+  ],
+  brandId: [
+    { required: true, message: '请选择商品品牌', trigger: 'change' }
   ],
   price: [
     { required: true, message: '请输入价格', trigger: 'blur' },
@@ -247,16 +265,44 @@ const loadCategoryList = async () => {
   }
 }
 
+const loadBrandList = async (showEmptyHint = false) => {
+  try {
+    brandList.value = await BrandApi.getBrandSimpleList()
+    if (showEmptyHint && !brandList.value.length) {
+      ElMessage.warning('请先在商品品牌中创建并启用至少一个品牌')
+    }
+  } catch (error) {
+    brandList.value = []
+    ElMessage.error('获取商品品牌失败')
+  }
+}
+
+const ensureBrandOption = (brandId?: number) => {
+  if (!brandId) return
+  if (brandList.value.some((item) => item.id === brandId)) return
+  brandList.value = [{ id: brandId, name: `品牌#${brandId}` }, ...brandList.value]
+}
+
 const openDialog = async (type: 'create' | 'update', id?: number) => {
   open(type)
   resetForm()
-  await loadCategoryList()
+  await Promise.all([loadCategoryList(), loadBrandList(true)])
+
+  const firstBrandId = brandList.value[0]?.id
+  if (type === 'create' && !formData.value.brandId && firstBrandId !== undefined) {
+    formData.value.brandId = firstBrandId
+  }
 
   if (id) {
     formLoading.value = true
     try {
       const data = await GoodsApi.getGoods(id)
       formData.value = data
+      ensureBrandOption(formData.value.brandId)
+      const fallbackBrandId = brandList.value[0]?.id
+      if (!formData.value.brandId && fallbackBrandId !== undefined) {
+        formData.value.brandId = fallbackBrandId
+      }
     } finally {
       formLoading.value = false
     }
@@ -279,6 +325,7 @@ const resetForm = () => {
   formData.value = {
     name: '',
     categoryId: undefined as any,
+    brandId: undefined as any,
     image: '',
     price: 0,
     stock: 0,
@@ -291,7 +338,7 @@ const resetForm = () => {
 defineExpose({ openDialog })
 
 onMounted(() => {
-  loadCategoryList()
+  Promise.all([loadCategoryList(), loadBrandList()])
 })
 </script>
 

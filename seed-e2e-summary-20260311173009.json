@@ -1,0 +1,72 @@
+{
+  "seedTag": "20260311173009",
+  "env": {
+    "adminBase": "https://azhe.tech/admin-api",
+    "appBase": "https://azhe.tech/app-api"
+  },
+  "created": {
+    "topCategoryCount": 2,
+    "leafCategoryCount": 4,
+    "brandCount": 4,
+    "levelCount": 2,
+    "expressCount": 2,
+    "goodsCount": 8,
+    "stockCheckedGoodsCount": 4
+  },
+  "ids": {
+    "deliveryTemplateId": 8,
+    "mockPayChannelId": 1,
+    "topCategoryIds": [
+      90122,
+      90123
+    ],
+    "leafCategoryIds": [
+      90124,
+      90125,
+      90126,
+      90127
+    ],
+    "brandIds": [
+      73,
+      74,
+      75,
+      76
+    ],
+    "levelIds": [
+      27,
+      28
+    ],
+    "expressIds": [
+      35,
+      36
+    ],
+    "spuIds": [
+      90152,
+      90153,
+      90154,
+      90155,
+      90156,
+      90157,
+      90158,
+      90159
+    ],
+    "skuIds": [
+      90152,
+      90153,
+      90154,
+      90155,
+      90156,
+      90157,
+      90158,
+      90159
+    ]
+  },
+  "orderFlow": {
+    "status": "FAILED",
+    "error": "pay_order_submit_failed",
+    "addressId": 90010,
+    "orderId": 3,
+    "payOrderId": 3,
+    "orderStatusAfterDelivery": null
+  }
+}
