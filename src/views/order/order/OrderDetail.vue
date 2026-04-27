@@ -13,11 +13,9 @@
       </el-descriptions-item>
       <el-descriptions-item label="支付方式">{{ orderData.payType }}</el-descriptions-item>
       <el-descriptions-item label="订单状态">
-        <el-tag v-if="orderData.status === 0" type="warning">待支付</el-tag>
-        <el-tag v-else-if="orderData.status === 1" type="primary">待发货</el-tag>
-        <el-tag v-else-if="orderData.status === 2" type="info">待收货</el-tag>
-        <el-tag v-else-if="orderData.status === 3" type="success">已完成</el-tag>
-        <el-tag v-else type="danger">已取消</el-tag>
+        <el-tag :type="getOrderStatusMeta(orderData.status).tagType">
+          {{ getOrderStatusMeta(orderData.status).label }}
+        </el-tag>
       </el-descriptions-item>
       <el-descriptions-item label="下单时间">{{ orderData.createTime }}</el-descriptions-item>
     </el-descriptions>
@@ -48,6 +46,7 @@
 <script setup lang="ts">
 import * as OrderApi from '@/api/order/order'
 import type { OrderVO } from '@/api/order/order'
+import { getOrderStatusMeta } from '@/api/order/order'
 
 const dialogVisible = ref(false)
 const loading = ref(false)

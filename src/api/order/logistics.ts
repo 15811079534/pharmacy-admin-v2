@@ -125,33 +125,91 @@ const mapLogistics = (item: TradeOrder, expressMap: Record<number, string>): Log
   }
 }
 
+const getPageBounds = (pageNo: number, pageSize: number) => {
+  const safePageNo = Math.max(1, Number(pageNo || 1))
+  const safePageSize = Math.max(1, Number(pageSize || 10))
+  const start = (safePageNo - 1) * safePageSize
+  return {
+    start,
+    end: start + safePageSize
+  }
+}
+
+const fetchOrderPage = (params: {
+  logisticsId?: number
+  trackingNo?: string
+  pageNo: number
+  pageSize: number
+}) => {
+  return request.get<{ list: TradeOrder[]; total: number }>({
+    url: '/trade/order/page',
+    params: {
+      logisticsId: params.logisticsId,
+      logisticsNo: params.trackingNo,
+      pageNo: params.pageNo,
+      pageSize: params.pageSize
+    }
+  })
+}
+
+const fetchAllLogisticsOrders = async (params: { logisticsId?: number; trackingNo?: string }) => {
+  const batchSize = 100
+  const firstPage = await fetchOrderPage({
+    ...params,
+    pageNo: 1,
+    pageSize: batchSize
+  })
+
+  const total = Number(firstPage.total || 0)
+  const list = [...(firstPage.list || [])]
+
+  if (total <= list.length) {
+    return list
+  }
+
+  const totalPages = Math.ceil(total / batchSize)
+  for (let pageNo = 2; pageNo <= totalPages; pageNo += 1) {
+    const pageData = await fetchOrderPage({
+      ...params,
+      pageNo,
+      pageSize: batchSize
+    })
+    list.push(...(pageData.list || []))
+  }
+
+  return list
+}
+
 // 查询物流分页
 export const getLogisticsPage = async (params: LogisticsPageReqVO) => {
   const expressMap = await loadExpressMap()
   const logisticsId = params.company ? Number(params.company) : undefined
-  const useLocalFilter = Boolean(params.trackingNo || params.status !== undefined)
-  const pageData = await request.get<{ list: TradeOrder[]; total: number }>({
-    url: '/trade/order/page',
-    params: {
-      logisticsId: Number.isFinite(logisticsId) ? logisticsId : undefined,
-      pageNo: useLocalFilter ? 1 : params.pageNo,
-      pageSize: useLocalFilter ? 500 : params.pageSize
-    }
-  })
-  const mapped = (pageData.list || []).map((item) => mapLogistics(item, expressMap))
-  const filtered = mapped.filter((item) => {
-    const trackingOk = params.trackingNo ? item.trackingNo.includes(params.trackingNo) : true
-    const statusOk = params.status === undefined ? true : item.status === params.status
-    return trackingOk && statusOk
-  })
-
-  if (!useLocalFilter) {
-    return { list: filtered, total: pageData.total || 0 }
+  const backendFilters = {
+    logisticsId: Number.isFinite(logisticsId) ? logisticsId : undefined,
+    trackingNo: params.trackingNo
   }
 
-  const start = (params.pageNo - 1) * params.pageSize
+  if (params.status === undefined) {
+    const pageData = await fetchOrderPage({
+      ...backendFilters,
+      pageNo: params.pageNo,
+      pageSize: params.pageSize
+    })
+
+    return {
+      list: (pageData.list || []).map((item) => mapLogistics(item, expressMap)),
+      total: pageData.total || 0
+    }
+  }
+
+  const allOrders = await fetchAllLogisticsOrders(backendFilters)
+  const filtered = allOrders
+    .map((item) => mapLogistics(item, expressMap))
+    .filter((item) => item.status === params.status)
+  const { start, end } = getPageBounds(params.pageNo, params.pageSize)
+
   return {
-    list: filtered.slice(start, start + params.pageSize),
+    list: filtered.slice(start, end),
     total: filtered.length
   }
 }

@@ -8,22 +8,24 @@
 
     <el-card class="search-card">
       <el-form ref="queryFormRef" :inline="true" :model="queryParams" class="search-form">
-        <el-form-item label="订单号">
+        <el-form-item label="订单号" prop="orderNo">
           <el-input v-model="queryParams.orderNo" placeholder="请输入订单号" clearable />
         </el-form-item>
-        <el-form-item label="订单状态">
-          <el-select v-model="queryParams.status" placeholder="请选择订单状态" clearable>
-            <el-option label="待支付" :value="0" />
-            <el-option label="待发货" :value="1" />
-            <el-option label="待收货" :value="2" />
-            <el-option label="已完成" :value="3" />
-            <el-option label="已取消" :value="4" />
+        <el-form-item label="订单状态" prop="status">
+          <el-select v-model="queryParams.status" placeholder="请选择订单状态" clearable :empty-values="[null]">
+            <el-option
+              v-for="option in ORDER_STATUS_OPTIONS"
+              :key="option.value"
+              :label="option.label"
+              :value="option.value"
+            />
           </el-select>
         </el-form-item>
-        <el-form-item label="下单时间">
+        <el-form-item label="下单时间" prop="createTime">
           <el-date-picker
             v-model="queryParams.createTime"
             type="daterange"
+            value-format="YYYY-MM-DD"
             range-separator="至"
             start-placeholder="开始日期"
             end-placeholder="结束日期"
@@ -48,11 +50,9 @@
         </el-table-column>
         <el-table-column prop="status" label="订单状态" width="100">
           <template #default="{ row }">
-            <el-tag v-if="row.status === 0" type="warning">待支付</el-tag>
-            <el-tag v-else-if="row.status === 1" type="primary">待发货</el-tag>
-            <el-tag v-else-if="row.status === 2" type="info">待收货</el-tag>
-            <el-tag v-else-if="row.status === 3" type="success">已完成</el-tag>
-            <el-tag v-else type="danger">已取消</el-tag>
+            <el-tag :type="getOrderStatusMeta(row.status).tagType">
+              {{ getOrderStatusMeta(row.status).label }}
+            </el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="payType" label="支付方式" width="100" />
@@ -60,7 +60,7 @@
         <el-table-column label="操作" width="250" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="handleDetail(row)">详情</el-button>
-            <el-button v-if="row.status === 1" link type="success" @click="handleDeliver(row)">
+            <el-button v-if="row.status === 10" link type="success" @click="handleDeliver(row)">
               发货
             </el-button>
           </template>
@@ -73,8 +73,8 @@
         :total="total"
         :page-sizes="[10, 20, 50, 100]"
         layout="total, sizes, prev, pager, next, jumper"
-        @size-change="handleQuery"
-        @current-change="handleQuery"
+        @size-change="handlePageSizeChange"
+        @current-change="handlePageChange"
       />
     </el-card>
   </div>
@@ -85,6 +85,7 @@ import { computed } from 'vue'
 import { useTable } from '@/hooks/useTable'
 import * as OrderApi from '@/api/order/order'
 import type { OrderPageReqVO } from '@/api/order/order'
+import { ORDER_STATUS_OPTIONS, getOrderStatusMeta } from '@/api/order/order'
 import PageHero from '@/components/PageHero.vue'
 import OrderDetail from './OrderDetail.vue'
 import DeliverForm from './DeliverForm.vue'
@@ -101,7 +102,7 @@ const queryParams = reactive<OrderPageReqVO>({
   pageSize: 10
 })
 
-const { loading, tableData, total, getList, handleQuery, handleReset } = useTable({
+const { loading, tableData, total, getList, handleQuery, handlePageChange, handlePageSizeChange, handleReset } = useTable({
   fetchData: OrderApi.getOrderPage,
   queryParams
 })
@@ -117,13 +118,13 @@ const heroStats = computed(() => {
     },
     {
       label: '待发货',
-      value: tableData.value.filter((item) => item.status === 1).length,
+      value: tableData.value.filter((item) => item.status === 10).length,
       helper: '当前页',
       tone: 'warning'
     },
     {
       label: '已完成',
-      value: tableData.value.filter((item) => item.status === 3).length,
+      value: tableData.value.filter((item) => item.status === 30).length,
       helper: '当前页',
       tone: 'success'
     },

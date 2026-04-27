@@ -8,11 +8,11 @@
 
     <el-card class="search-card">
       <el-form ref="queryFormRef" :inline="true" :model="queryParams" class="search-form">
-        <el-form-item label="轮播图标题">
+        <el-form-item label="轮播图标题" prop="title">
           <el-input v-model="queryParams.title" placeholder="请输入轮播图标题" clearable />
         </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="queryParams.status" placeholder="请选择状态" clearable>
+        <el-form-item label="状态" prop="status">
+          <el-select v-model="queryParams.status" placeholder="请选择状态" clearable :empty-values="[null]">
             <el-option label="启用" :value="0" />
             <el-option label="禁用" :value="1" />
           </el-select>
@@ -66,8 +66,8 @@
         :total="total"
         :page-sizes="[10, 20, 50, 100]"
         layout="total, sizes, prev, pager, next, jumper"
-        @size-change="handleQuery"
-        @current-change="handleQuery"
+        @size-change="handlePageSizeChange"
+        @current-change="handlePageChange"
       />
     </el-card>
   </div>
@@ -91,7 +91,7 @@ const queryParams = reactive<BannerPageReqVO>({
   pageSize: 10
 })
 
-const { loading, tableData, total, getList, handleQuery, handleReset } = useTable({
+const { loading, tableData, total, getList, handleQuery, handlePageChange, handlePageSizeChange, handleReset } = useTable({
   fetchData: BannerApi.getBannerPage,
   queryParams
 })

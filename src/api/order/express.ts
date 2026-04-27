@@ -25,17 +25,41 @@ interface BackendExpressRecord {
   logo?: string
   sort?: number
   status?: number
-  createTime?: string
+  createTime?: string | number
+}
+
+const formatDateTime = (value?: string | number) => {
+  if (value === undefined || value === null || value === '') {
+    return ''
+  }
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return String(value)
+  }
+  const yyyy = date.getFullYear()
+  const mm = `${date.getMonth() + 1}`.padStart(2, '0')
+  const dd = `${date.getDate()}`.padStart(2, '0')
+  const hh = `${date.getHours()}`.padStart(2, '0')
+  const mi = `${date.getMinutes()}`.padStart(2, '0')
+  const ss = `${date.getSeconds()}`.padStart(2, '0')
+  return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}`
+}
+
+const normalizeLogo = (logo?: string) => {
+  if (!logo || logo.includes('vite.svg')) {
+    return ''
+  }
+  return logo
 }
 
 const mapExpress = (item: BackendExpressRecord): ExpressVO => ({
   id: item.id,
   code: item.code || '',
   name: item.name || '',
-  logo: item.logo || '',
+  logo: normalizeLogo(item.logo),
   sort: Number(item.sort || 0),
   status: Number(item.status ?? 0),
-  createTime: item.createTime
+  createTime: formatDateTime(item.createTime)
 })
 
 const mapToBackend = (data: ExpressVO) => ({

@@ -29,7 +29,24 @@ interface BackendBrandVO {
   sort?: number
   description?: string
   status?: number
-  createTime?: string
+  createTime?: string | number
+}
+
+const formatDateTime = (value?: string | number) => {
+  if (value === undefined || value === null || value === '') {
+    return ''
+  }
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return String(value)
+  }
+  const yyyy = date.getFullYear()
+  const mm = `${date.getMonth() + 1}`.padStart(2, '0')
+  const dd = `${date.getDate()}`.padStart(2, '0')
+  const hh = `${date.getHours()}`.padStart(2, '0')
+  const mi = `${date.getMinutes()}`.padStart(2, '0')
+  const ss = `${date.getSeconds()}`.padStart(2, '0')
+  return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}`
 }
 
 const mapToView = (item: BackendBrandVO): BrandVO => ({
@@ -39,7 +56,7 @@ const mapToView = (item: BackendBrandVO): BrandVO => ({
   sort: Number(item.sort || 0),
   description: item.description || '',
   status: Number(item.status ?? 0),
-  createTime: item.createTime
+  createTime: formatDateTime(item.createTime)
 })
 
 const mapToBackend = (data: BrandVO) => ({

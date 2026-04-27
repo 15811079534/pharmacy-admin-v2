@@ -28,8 +28,8 @@
 
       <el-dropdown @command="handleCommand">
         <div class="user-info">
-          <el-avatar :size="32" class="avatar" :src="userStore.userInfo?.avatar">
-            <el-icon><User /></el-icon>
+          <el-avatar :size="32" class="avatar" :src="avatarSrc" @error="handleAvatarError">
+            {{ avatarFallback }}
           </el-avatar>
           <div class="user-meta">
             <span class="name">{{ userStore.userInfo?.nickname || '管理员' }}</span>
@@ -61,7 +61,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
@@ -83,6 +83,17 @@ const userStore = useUserStore()
 const isHome = computed(() => route.path === '/home')
 const pageTitle = computed(() => (route.meta.title as string) || '运营总览')
 const breadcrumbItems = computed(() => (isHome.value ? [] : ['首页', pageTitle.value]))
+const avatarLoadFailed = ref(false)
+
+const avatarSrc = computed(() => {
+  const avatar = userStore.userInfo?.avatar?.trim()
+  if (!avatar || avatarLoadFailed.value) {
+    return ''
+  }
+  return avatar
+})
+
+const avatarFallback = computed(() => (userStore.userInfo?.nickname || '管理员').trim().slice(0, 1) || '管')
 
 const formatTime = () =>
   new Intl.DateTimeFormat('zh-CN', {
@@ -130,11 +141,26 @@ const handleCommand = async (command: string) => {
   }
 }
 
+const handleAvatarError = () => {
+  avatarLoadFailed.value = true
+  return false
+}
+
 onMounted(() => {
   timer = window.setInterval(() => {
     currentTime.value = formatTime()
   }, 30000)
 })
+
+watch(
+  () => userStore.userInfo?.avatar,
+  () => {
+    avatarLoadFailed.value = false
+  },
+  {
+    immediate: true
+  }
+)
 
 onBeforeUnmount(() => {
   window.clearInterval(timer)

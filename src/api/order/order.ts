@@ -1,4 +1,5 @@
 import request from '@/utils/request'
+import { normalizeDateRangeToDayBounds } from '@/utils/query'
 
 export interface OrderVO {
   id?: number
@@ -8,7 +9,7 @@ export interface OrderVO {
   company?: string
   userName: string
   totalAmount: number
-  status: number
+  status: number // 0待支付/10待发货/20已发货/30已完成/40已取消
   payType: string
   createTime?: string
   items?: OrderItemVO[]
@@ -34,6 +35,26 @@ export interface ExpressCompanyVO {
   id: number
   code?: string
   name: string
+}
+
+export const ORDER_STATUS_OPTIONS = [
+  { label: '待支付', value: 0 },
+  { label: '待发货', value: 10 },
+  { label: '已发货', value: 20 },
+  { label: '已完成', value: 30 },
+  { label: '已取消', value: 40 }
+] as const
+
+const ORDER_STATUS_META: Record<number, { label: string; tagType: 'primary' | 'success' | 'warning' | 'danger' | 'info' }> = {
+  0: { label: '待支付', tagType: 'warning' },
+  10: { label: '待发货', tagType: 'primary' },
+  20: { label: '已发货', tagType: 'info' },
+  30: { label: '已完成', tagType: 'success' },
+  40: { label: '已取消', tagType: 'danger' }
+}
+
+export const getOrderStatusMeta = (status?: number) => {
+  return ORDER_STATUS_META[status || 0] || { label: `未知状态(${status ?? '-'})`, tagType: 'info' as const }
 }
 
 interface TradeOrderItem {
@@ -81,18 +102,10 @@ const payTypeLabel = (code?: string) => {
     wx_lite: '微信小程序',
     wx_pub: '微信公众号',
     alipay_pc: '支付宝',
-    wallet: '钱包'
+    wallet: '钱包',
+    mock: '微信小程序'
   }
   return map[code] || code
-}
-
-const normalizeOrderStatus = (status?: number) => {
-  if (status === 0) return 0
-  if (status === 1 || status === 10) return 1
-  if (status === 2 || status === 20) return 2
-  if (status === 3 || status === 30) return 3
-  if (status === 4 || status === 40 || status === 50) return 4
-  return 0
 }
 
 const mapOrderItem = (item: TradeOrderItem): OrderItemVO => ({
@@ -109,7 +122,7 @@ const mapOrder = (item: TradeOrder): OrderVO => ({
   trackingNo: item.logisticsNo || '',
   userName: item.user?.nickname || '-',
   totalAmount: toYuan(item.payPrice),
-  status: normalizeOrderStatus(item.status),
+  status: item.status || 0,
   payType: payTypeLabel(item.payChannelCode),
   createTime: formatDateTime(item.createTime),
   items: (item.items || []).map(mapOrderItem)
@@ -117,13 +130,14 @@ const mapOrder = (item: TradeOrder): OrderVO => ({
 
 // 查询订单分页
 export const getOrderPage = async (params: OrderPageReqVO) => {
+  const createTime = normalizeDateRangeToDayBounds(params.createTime)
   const data = await request.get<{ list: TradeOrder[]; total: number }>({
     url: '/trade/order/page',
     params: {
       no: params.orderNo,
       logisticsId: params.logisticsId,
       status: params.status,
-      createTime: params.createTime,
+      createTime,
       pageNo: params.pageNo,
       pageSize: params.pageSize
     }
@@ -170,13 +184,14 @@ export const cancelOrder = (id: number, reason: string) => {
 }
 
 export const exportOrder = (params: OrderPageReqVO) => {
+  const createTime = normalizeDateRangeToDayBounds(params.createTime)
   return request.download({
     url: '/trade/order/export-excel',
     params: {
       no: params.orderNo,
       logisticsId: params.logisticsId,
       status: params.status,
-      createTime: params.createTime,
+      createTime,
       pageNo: params.pageNo,
       pageSize: params.pageSize
     }

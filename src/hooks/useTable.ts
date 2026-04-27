@@ -49,6 +49,25 @@ export function useTable<T = any, P = any>(options: UseTableOptions<T, P>) {
     getList()
   }
 
+  const handlePageChange = (pageNo?: number) => {
+    if (queryParams && typeof queryParams === 'object' && 'pageNo' in queryParams && typeof pageNo === 'number') {
+      ;(queryParams as any).pageNo = pageNo
+    }
+    getList()
+  }
+
+  const handlePageSizeChange = (pageSize?: number) => {
+    if (queryParams && typeof queryParams === 'object') {
+      if ('pageSize' in queryParams && typeof pageSize === 'number') {
+        ;(queryParams as any).pageSize = pageSize
+      }
+      if ('pageNo' in queryParams) {
+        ;(queryParams as any).pageNo = 1
+      }
+    }
+    getList()
+  }
+
   const handleReset = (resetFields: () => void) => {
     resetFields()
     handleQuery()
@@ -61,6 +80,8 @@ export function useTable<T = any, P = any>(options: UseTableOptions<T, P>) {
     queryParams,
     getList,
     handleQuery,
+    handlePageChange,
+    handlePageSizeChange,
     handleReset
   }
 }

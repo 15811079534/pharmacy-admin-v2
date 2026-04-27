@@ -8,14 +8,14 @@
 
     <el-card class="search-card">
       <el-form ref="queryFormRef" :inline="true" :model="queryParams" class="search-form">
-        <el-form-item label="用户姓名">
+        <el-form-item label="用户姓名" prop="userName">
           <el-input v-model="queryParams.userName" placeholder="请输入用户姓名" clearable />
         </el-form-item>
-        <el-form-item label="医保卡号">
+        <el-form-item label="医保卡号" prop="cardNo">
           <el-input v-model="queryParams.cardNo" placeholder="请输入医保卡号" clearable />
         </el-form-item>
-        <el-form-item label="卡状态">
-          <el-select v-model="queryParams.status" placeholder="请选择卡状态" clearable>
+        <el-form-item label="卡状态" prop="status">
+          <el-select v-model="queryParams.status" placeholder="请选择卡状态" clearable :empty-values="[null]">
             <el-option label="已启用" :value="1" />
             <el-option label="已禁用" :value="0" />
           </el-select>
@@ -68,8 +68,8 @@
         :total="total"
         :page-sizes="[10, 20, 50, 100]"
         layout="total, sizes, prev, pager, next, jumper"
-        @size-change="handleQuery"
-        @current-change="handleQuery"
+        @size-change="handlePageSizeChange"
+        @current-change="handlePageChange"
       />
     </el-card>
   </div>
@@ -94,7 +94,7 @@ const queryParams = reactive<InsurancePageReqVO>({
   pageSize: 10
 })
 
-const { loading, tableData, total, getList, handleQuery, handleReset } = useTable({
+const { loading, tableData, total, getList, handleQuery, handlePageChange, handlePageSizeChange, handleReset } = useTable({
   fetchData: InsuranceApi.getInsurancePage,
   queryParams
 })

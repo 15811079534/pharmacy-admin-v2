@@ -89,10 +89,53 @@
         />
       </el-form-item>
 
+      <el-row :gutter="20">
+        <el-col :span="12">
+          <el-form-item label="药品类型" prop="drugType">
+            <el-select v-model="formData.drugType" placeholder="请选择药品类型" style="width: 100%">
+              <el-option
+                v-for="item in GoodsApi.DRUG_TYPE_OPTIONS"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value"
+              />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="12">
+          <el-form-item label="购买规则">
+            <div class="purchase-rule-box">
+              <el-tag :type="formData.prescriptionRequired ? 'danger' : 'success'">
+                {{ formData.prescriptionRequired ? '先审方后购买' : '可直接购买' }}
+              </el-tag>
+              <div class="purchase-rule-hint">
+                {{ formData.prescriptionRequired ? '处方药会在前台强制走处方审核闭环' : '非处方药可直接加入购物车和下单' }}
+              </div>
+            </div>
+          </el-form-item>
+        </el-col>
+      </el-row>
+
+      <el-form-item label="批准文号" prop="approvalNumber">
+        <el-input
+          v-model="formData.approvalNumber"
+          placeholder="请输入国药准字/备案号，没有可留空"
+        />
+      </el-form-item>
+
+      <el-form-item label="用药说明" prop="drugInstruction">
+        <el-input
+          v-model="formData.drugInstruction"
+          type="textarea"
+          :rows="3"
+          placeholder="请输入用法用量、禁忌或购药提醒"
+        />
+      </el-form-item>
+
       <el-form-item label="状态" prop="status">
         <el-radio-group v-model="formData.status">
-          <el-radio :value="0">上架</el-radio>
-          <el-radio :value="1">下架</el-radio>
+          <el-radio :value="GoodsApi.GOODS_VIEW_STATUS.ON_SHELF">上架</el-radio>
+          <el-radio :value="GoodsApi.GOODS_VIEW_STATUS.OFF_SHELF">下架</el-radio>
         </el-radio-group>
       </el-form-item>
     </el-form>
@@ -134,8 +177,12 @@ const formData = ref<GoodsVO>({
   image: '',
   price: 0,
   stock: 0,
-  status: 0,
-  description: ''
+  status: GoodsApi.GOODS_VIEW_STATUS.ON_SHELF,
+  description: '',
+  drugType: GoodsApi.DRUG_TYPE.GENERAL,
+  prescriptionRequired: false,
+  approvalNumber: '',
+  drugInstruction: ''
 })
 
 const formRules = {
@@ -160,10 +207,21 @@ const formRules = {
   image: [
     { required: true, message: '请上传主图', trigger: 'change' }
   ],
+  drugType: [
+    { required: true, message: '请选择药品类型', trigger: 'change' }
+  ],
   status: [
     { required: true, message: '请选择状态', trigger: 'change' }
   ]
 }
+
+watch(
+  () => formData.value.drugType,
+  (drugType) => {
+    formData.value.prescriptionRequired = Number(drugType) === GoodsApi.DRUG_TYPE.RX
+  },
+  { immediate: true }
+)
 
 const handleBeforeUpload = (file: File) => {
   const isImage = file.type.startsWith('image/')
@@ -329,8 +387,12 @@ const resetForm = () => {
     image: '',
     price: 0,
     stock: 0,
-    status: 0,
-    description: ''
+    status: GoodsApi.GOODS_VIEW_STATUS.ON_SHELF,
+    description: '',
+    drugType: GoodsApi.DRUG_TYPE.GENERAL,
+    prescriptionRequired: false,
+    approvalNumber: '',
+    drugInstruction: ''
   }
   formRef.value?.resetFields()
 }
@@ -372,5 +434,17 @@ onMounted(() => {
   height: 148px;
   display: block;
   object-fit: cover;
+}
+
+.purchase-rule-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.purchase-rule-hint {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+  line-height: 1.5;
 }
 </style>

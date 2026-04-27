@@ -1,5 +1,55 @@
 import request from '@/utils/request'
 
+export const GOODS_VIEW_STATUS = {
+  RECYCLE: -1,
+  ON_SHELF: 1,
+  OFF_SHELF: 0
+} as const
+
+export const GOODS_TAB_TYPE = {
+  FOR_SALE: 0,
+  IN_WAREHOUSE: 1,
+  RECYCLE_BIN: 4
+} as const
+
+export const DRUG_TYPE = {
+  GENERAL: 0,
+  OTC_A: 1,
+  OTC_B: 2,
+  RX: 3
+} as const
+
+export type DrugType = (typeof DRUG_TYPE)[keyof typeof DRUG_TYPE]
+
+export const DRUG_TYPE_OPTIONS = [
+  {
+    value: DRUG_TYPE.GENERAL,
+    label: '健康商品',
+    tagType: 'info',
+    purchaseLabel: '可直接购买'
+  },
+  {
+    value: DRUG_TYPE.OTC_A,
+    label: 'OTC甲类',
+    tagType: 'success',
+    purchaseLabel: '可直接购买'
+  },
+  {
+    value: DRUG_TYPE.OTC_B,
+    label: 'OTC乙类',
+    tagType: 'warning',
+    purchaseLabel: '可直接购买'
+  },
+  {
+    value: DRUG_TYPE.RX,
+    label: '处方药 Rx',
+    tagType: 'danger',
+    purchaseLabel: '先审方后购买'
+  }
+] as const
+
+export type GoodsViewStatus = (typeof GOODS_VIEW_STATUS)[keyof typeof GOODS_VIEW_STATUS]
+
 export interface GoodsVO {
   id?: number
   name: string
@@ -11,15 +61,20 @@ export interface GoodsVO {
   price: number
   stock: number
   sales?: number
-  status: number
+  status: GoodsViewStatus
   description?: string
+  drugType: DrugType
+  prescriptionRequired: boolean
+  approvalNumber?: string
+  drugInstruction?: string
   createTime?: string
 }
 
 export interface GoodsPageReqVO {
   name?: string
   categoryId?: number
-  status?: number
+  status?: GoodsViewStatus
+  tabType?: number
   pageNo: number
   pageSize: number
 }
@@ -86,10 +141,31 @@ interface CategoryMeta {
 let defaultBrandIdCache: number | null = null
 let categoryMetaCache: CategoryMeta | null = null
 
+export const getDrugTypeMeta = (drugType?: number) => {
+  return (
+    DRUG_TYPE_OPTIONS.find((item) => item.value === Number(drugType)) ||
+    DRUG_TYPE_OPTIONS[0]
+  )
+}
+
+const normalizeDrugType = (
+  drugType?: number,
+  prescriptionRequired?: boolean
+): DrugType => {
+  const normalizedValue = Number(drugType)
+  if (Object.values(DRUG_TYPE).includes(normalizedValue as DrugType)) {
+    return normalizedValue as DrugType
+  }
+  return prescriptionRequired ? DRUG_TYPE.RX : DRUG_TYPE.GENERAL
+}
+
 const toYuan = (amount?: number) => Number(((amount || 0) / 100).toFixed(2))
 const toFen = (amount?: number) => Math.round(Number(amount || 0) * 100)
-const toViewStatus = (status?: number) => (status === 1 ? 0 : 1)
-const toBackendStatus = (status?: number) => (status === 0 ? 1 : 0)
+const normalizeStatus = (status?: number): GoodsViewStatus => {
+  if (status === GOODS_VIEW_STATUS.ON_SHELF) return GOODS_VIEW_STATUS.ON_SHELF
+  if (status === GOODS_VIEW_STATUS.OFF_SHELF) return GOODS_VIEW_STATUS.OFF_SHELF
+  return GOODS_VIEW_STATUS.RECYCLE
+}
 
 const formatDateTime = (value?: string | number) => {
   if (value === undefined || value === null || value === '') {
@@ -113,21 +189,29 @@ const stripHtml = (html?: string) => {
   return html.replace(/<[^>]+>/g, '').trim()
 }
 
-const mapGoods = (item: ProductSpuRecord, categoryNameMap: Record<number, string>): GoodsVO => ({
-  id: item.id,
-  name: item.name || '',
-  categoryId: item.categoryId || 0,
-  brandId: item.brandId ? Number(item.brandId) : undefined,
-  categoryName: item.categoryId ? categoryNameMap[item.categoryId] || '' : '',
-  image: item.picUrl || '',
-  images: item.sliderPicUrls || [],
-  price: toYuan(item.price),
-  stock: Number(item.stock || item.skus?.[0]?.stock || 0),
-  sales: Number(item.salesCount || 0) + Number(item.virtualSalesCount || 0),
-  status: toViewStatus(item.status),
-  description: stripHtml(item.description || item.introduction),
-  createTime: formatDateTime(item.createTime)
-})
+const mapGoods = (item: ProductSpuRecord, categoryNameMap: Record<number, string>): GoodsVO => {
+  const drugType = normalizeDrugType(item.drugType, item.prescriptionRequired)
+
+  return {
+    id: item.id,
+    name: item.name || '',
+    categoryId: item.categoryId || 0,
+    brandId: item.brandId ? Number(item.brandId) : undefined,
+    categoryName: item.categoryId ? categoryNameMap[item.categoryId] || '' : '',
+    image: item.picUrl || '',
+    images: item.sliderPicUrls || [],
+    price: toYuan(item.price),
+    stock: Number(item.stock || item.skus?.[0]?.stock || 0),
+    sales: Number(item.salesCount || 0) + Number(item.virtualSalesCount || 0),
+    status: normalizeStatus(item.status),
+    description: stripHtml(item.description || item.introduction),
+    drugType,
+    prescriptionRequired: drugType === DRUG_TYPE.RX,
+    approvalNumber: item.approvalNumber || '',
+    drugInstruction: item.drugInstruction || '',
+    createTime: formatDateTime(item.createTime)
+  }
+}
 
 const buildCategoryMeta = (list: ProductCategoryRecord[]): CategoryMeta => {
   const nameMap: Record<number, string> = {}
@@ -249,6 +333,10 @@ const buildSavePayload = async (goods: GoodsVO, detail?: ProductSpuRecord) => {
     throw new Error('请选择商品品牌')
   }
   const categoryId = await resolveValidCategoryId(goods.categoryId || detail?.categoryId)
+  const drugType = normalizeDrugType(
+    goods.drugType,
+    goods.prescriptionRequired ?? detail?.prescriptionRequired
+  )
   return {
     id: detail?.id || goods.id,
     name: goods.name,
@@ -268,10 +356,10 @@ const buildSavePayload = async (goods: GoodsVO, detail?: ProductSpuRecord) => {
     deliveryTemplateId: detail?.deliveryTemplateId ?? 0,
     giveIntegral: detail?.giveIntegral ?? 0,
     subCommissionType: detail?.subCommissionType ?? false,
-    drugType: detail?.drugType ?? 0,
-    prescriptionRequired: detail?.prescriptionRequired ?? false,
-    approvalNumber: detail?.approvalNumber,
-    drugInstruction: detail?.drugInstruction,
+    drugType,
+    prescriptionRequired: drugType === DRUG_TYPE.RX,
+    approvalNumber: goods.approvalNumber || detail?.approvalNumber,
+    drugInstruction: goods.drugInstruction || detail?.drugInstruction,
     virtualSalesCount: detail?.virtualSalesCount ?? 0,
     salesCount: detail?.salesCount ?? Number(goods.sales || 0),
     browseCount: detail?.browseCount ?? 0,
@@ -279,12 +367,12 @@ const buildSavePayload = async (goods: GoodsVO, detail?: ProductSpuRecord) => {
   }
 }
 
-const updateGoodsStatus = (id: number, viewStatus: number) => {
+const updateGoodsStatus = (id: number, viewStatus: GoodsViewStatus) => {
   return request.put({
     url: '/product/spu/update-status',
     data: {
       id,
-      status: toBackendStatus(viewStatus)
+      status: viewStatus
     }
   })
 }
@@ -296,33 +384,37 @@ const getGoodsDetailRaw = (id: number) => {
   })
 }
 
+const resolveGoodsTabType = (params: GoodsPageReqVO) => {
+  if (params.tabType === GOODS_TAB_TYPE.RECYCLE_BIN) {
+    return GOODS_TAB_TYPE.RECYCLE_BIN
+  }
+  if (params.status === GOODS_VIEW_STATUS.ON_SHELF) {
+    return GOODS_TAB_TYPE.FOR_SALE
+  }
+  if (params.status === GOODS_VIEW_STATUS.OFF_SHELF) {
+    return GOODS_TAB_TYPE.IN_WAREHOUSE
+  }
+  return undefined
+}
+
+const buildGoodsPageParams = (params: GoodsPageReqVO) => ({
+  name: params.name,
+  categoryId: params.categoryId && params.categoryId > 0 ? params.categoryId : undefined,
+  tabType: resolveGoodsTabType(params),
+  pageNo: params.pageNo,
+  pageSize: params.pageSize
+})
+
 // 查询药品分页
 export const getGoodsPage = async (params: GoodsPageReqVO) => {
-  const useLocalStatusFilter = params.status !== undefined
   const data = await request.get<{ list: ProductSpuRecord[]; total: number }>({
     url: '/product/spu/page',
-    params: {
-      name: params.name,
-      categoryId: params.categoryId,
-      pageNo: useLocalStatusFilter ? 1 : params.pageNo,
-      pageSize: useLocalStatusFilter ? 500 : params.pageSize
-    }
+    params: buildGoodsPageParams(params)
   })
   const categoryNameMap = await getCategoryNameMap()
-  const mapped = (data.list || []).map((item) => mapGoods(item, categoryNameMap))
-  const filtered =
-    params.status === undefined ? mapped : mapped.filter((item) => item.status === params.status)
-
-  if (!useLocalStatusFilter) {
-    return {
-      list: filtered,
-      total: data.total || 0
-    }
-  }
-  const start = (params.pageNo - 1) * params.pageSize
   return {
-    list: filtered.slice(start, start + params.pageSize),
-    total: filtered.length
+    list: (data.list || []).map((item) => mapGoods(item, categoryNameMap)),
+    total: data.total || 0
   }
 }
 
@@ -358,6 +450,16 @@ export const updateGoods = async (data: GoodsVO) => {
   await updateGoodsStatus(data.id, data.status)
 }
 
+// 移入回收站
+export const moveGoodsToRecycle = (id: number) => {
+  return updateGoodsStatus(id, GOODS_VIEW_STATUS.RECYCLE)
+}
+
+// 从回收站恢复，默认恢复为下架状态
+export const restoreGoods = (id: number, status: GoodsViewStatus = GOODS_VIEW_STATUS.OFF_SHELF) => {
+  return updateGoodsStatus(id, status)
+}
+
 // 删除药品
 export const deleteGoods = (id: number) => {
   return request.delete({
@@ -370,11 +472,6 @@ export const deleteGoods = (id: number) => {
 export const exportGoods = (params: GoodsPageReqVO) => {
   return request.download({
     url: '/product/spu/export-excel',
-    params: {
-      name: params.name,
-      categoryId: params.categoryId,
-      pageNo: params.pageNo,
-      pageSize: params.pageSize
-    }
+    params: buildGoodsPageParams(params)
   })
 }

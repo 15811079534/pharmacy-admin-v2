@@ -8,11 +8,11 @@
 
     <el-card class="search-card">
       <el-form ref="queryFormRef" :inline="true" :model="queryParams" class="search-form">
-        <el-form-item label="药品名称">
+        <el-form-item label="药品名称" prop="goodsName">
           <el-input v-model="queryParams.goodsName" placeholder="请输入药品名称" clearable />
         </el-form-item>
-        <el-form-item label="库存状态">
-          <el-select v-model="queryParams.stockStatus" placeholder="请选择库存状态" clearable>
+        <el-form-item label="库存状态" prop="stockStatus">
+          <el-select v-model="queryParams.stockStatus" placeholder="请选择库存状态" clearable :empty-values="[null]">
             <el-option label="充足" :value="0" />
             <el-option label="不足" :value="1" />
             <el-option label="缺货" :value="2" />
@@ -78,8 +78,8 @@
         :total="total"
         :page-sizes="[10, 20, 50, 100]"
         layout="total, sizes, prev, pager, next, jumper"
-        @size-change="handleQuery"
-        @current-change="handleQuery"
+        @size-change="handlePageSizeChange"
+        @current-change="handlePageChange"
       />
     </el-card>
   </div>
@@ -105,7 +105,7 @@ const queryParams = reactive<StockPageReqVO>({
   pageSize: 10
 })
 
-const { loading, tableData, total, getList, handleQuery, handleReset } = useTable({
+const { loading, tableData, total, getList, handleQuery, handlePageChange, handlePageSizeChange, handleReset } = useTable({
   fetchData: StockApi.getStockPage,
   queryParams
 })

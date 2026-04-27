@@ -103,6 +103,18 @@ a {
   color: var(--brand-text-secondary);
 }
 
+.search-form .el-form-item .el-input {
+  width: 220px;
+}
+
+.search-form .el-form-item .el-select {
+  width: 168px;
+}
+
+.search-form .el-form-item .el-date-editor {
+  width: 280px;
+}
+
 .el-tag {
   border: none;
   font-weight: 600;

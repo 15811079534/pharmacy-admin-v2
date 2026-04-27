@@ -21,6 +21,20 @@ export interface StorePageReqVO {
   pageSize: number
 }
 
+export const STORE_STATUS_OPTIONS = [
+  { label: '营业中', value: 1 },
+  { label: '休息中', value: 0 }
+] as const
+
+const STORE_STATUS_META: Record<number, { label: string; tagType: 'success' | 'info' }> = {
+  1: { label: '营业中', tagType: 'success' },
+  0: { label: '休息中', tagType: 'info' }
+}
+
+export const getStoreStatusMeta = (status?: number) => {
+  return STORE_STATUS_META[status ?? 0] || { label: `未知状态(${status ?? '-'})`, tagType: 'info' as const }
+}
+
 interface PharmacyStoreRecord {
   id?: number
   name?: string
@@ -56,10 +70,6 @@ const formatDateTime = (value?: string | number) => {
   return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}`
 }
 
-// 页面沿用 0=营业中 / 1=休息中，需要和后端 1=营业中 / 0=休息中互转
-const toViewStatus = (status?: number) => (status === 1 ? 0 : 1)
-const toBackendStatus = (status?: number) => (status === 0 ? 1 : 0)
-
 const mapStore = (item: PharmacyStoreRecord): StoreVO => ({
   id: item.id,
   name: item.name || '',
@@ -70,7 +80,7 @@ const mapStore = (item: PharmacyStoreRecord): StoreVO => ({
   businessHours: [item.openTime, item.closeTime].filter(Boolean).join('-'),
   deliveryRadius: Number(item.deliveryRadius || 0),
   picUrl: item.picUrl || '',
-  status: toViewStatus(item.status),
+  status: Number(item.status ?? 0),
   createTime: formatDateTime(item.createTime)
 })
 
@@ -91,13 +101,14 @@ const toBackendPayload = (data: StoreVO) => {
     openTime: openTime || undefined,
     closeTime: closeTime || undefined,
     deliveryRadius: data.deliveryRadius,
-    status: toBackendStatus(data.status),
+    status: data.status,
     picUrl: data.picUrl || undefined
   }
 }
 
 // 查询门店分页
 export const getStorePage = async (params: StorePageReqVO) => {
+  // 当前线上后端仅提供 list 接口，这里直接走前端分页，避免每次进入页面先触发 404。
   const list = await request.get<PharmacyStoreRecord[]>({
     url: '/trade/pharmacy-store/list'
   })
@@ -108,6 +119,7 @@ export const getStorePage = async (params: StorePageReqVO) => {
     return nameOk && statusOk
   })
   const start = (params.pageNo - 1) * params.pageSize
+
   return {
     list: filtered.slice(start, start + params.pageSize),
     total: filtered.length

@@ -27,7 +27,24 @@ interface BackendBannerVO {
   sort?: number
   status?: number
   memo?: string
-  createTime?: string
+  createTime?: string | number
+}
+
+const formatDateTime = (value?: string | number) => {
+  if (value === undefined || value === null || value === '') {
+    return ''
+  }
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return String(value)
+  }
+  const yyyy = date.getFullYear()
+  const mm = `${date.getMonth() + 1}`.padStart(2, '0')
+  const dd = `${date.getDate()}`.padStart(2, '0')
+  const hh = `${date.getHours()}`.padStart(2, '0')
+  const mi = `${date.getMinutes()}`.padStart(2, '0')
+  const ss = `${date.getSeconds()}`.padStart(2, '0')
+  return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}`
 }
 
 const inferLinkType = (url?: string) => {
@@ -45,7 +62,7 @@ const mapToView = (item: BackendBannerVO): BannerVO => ({
   linkValue: item.url || '',
   sort: Number(item.sort || 0),
   status: Number(item.status ?? 0),
-  createTime: item.createTime
+  createTime: formatDateTime(item.createTime)
 })
 
 const mapToBackend = (data: BannerVO): BackendBannerVO => ({
@@ -53,7 +70,7 @@ const mapToBackend = (data: BannerVO): BackendBannerVO => ({
   title: data.title,
   url: data.linkValue,
   picUrl: data.image,
-  position: 1,
+  position: 1, // 固定为1(首页位置),确保小程序能正确显示
   sort: Number(data.sort || 0),
   status: Number(data.status ?? 0),
   memo: `linkType:${data.linkType}`

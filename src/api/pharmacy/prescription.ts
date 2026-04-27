@@ -66,33 +66,21 @@ const mapPrescription = (item: AdminPrescriptionRecord): PrescriptionVO => ({
 
 // 查询处方分页
 export const getPrescriptionPage = async (params: PrescriptionPageReqVO) => {
-  const useLocalFilter = Boolean(params.prescriptionNo || params.userId)
   const data = await request.get<{ list: AdminPrescriptionRecord[]; total: number }>({
     url: '/trade/admin/prescription/page',
     params: {
+      prescriptionNo: params.prescriptionNo,
+      userId: params.userId,
       status: params.status,
-      pageNo: useLocalFilter ? 1 : params.pageNo,
-      pageSize: useLocalFilter ? 500 : params.pageSize
+      pageNo: params.pageNo,
+      pageSize: params.pageSize
     }
   })
   const mapped = (data.list || []).map(mapPrescription)
-  const filtered = mapped.filter((item) => {
-    const noOk = params.prescriptionNo ? item.prescriptionNo.includes(params.prescriptionNo) : true
-    const userOk = params.userId ? Number(item.userId) === Number(params.userId) : true
-    return noOk && userOk
-  })
 
-  if (!useLocalFilter) {
-    return {
-      list: filtered,
-      total: data.total || 0
-    }
-  }
-
-  const start = (params.pageNo - 1) * params.pageSize
   return {
-    list: filtered.slice(start, start + params.pageSize),
-    total: filtered.length
+    list: mapped,
+    total: data.total || 0
   }
 }
 

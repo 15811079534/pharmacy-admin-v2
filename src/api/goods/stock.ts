@@ -135,30 +135,76 @@ const matchesStockStatus = (item: StockVO, status?: number) => {
   return true
 }
 
-// 查询库存分页
-export const getStockPage = async (params: StockPageReqVO) => {
-  const useLocalFilter = params.stockStatus !== undefined
-  const data = await request.get<{ list: ProductSpuRecord[]; total: number }>({
+const getPageBounds = (pageNo: number, pageSize: number) => {
+  const safePageNo = Math.max(1, Number(pageNo || 1))
+  const safePageSize = Math.max(1, Number(pageSize || 10))
+  const start = (safePageNo - 1) * safePageSize
+  return {
+    start,
+    end: start + safePageSize
+  }
+}
+
+const fetchSpuPage = async (params: { goodsName?: string; pageNo: number; pageSize: number }) => {
+  return request.get<{ list: ProductSpuRecord[]; total: number }>({
     url: '/product/spu/page',
     params: {
       name: params.goodsName,
-      pageNo: useLocalFilter ? 1 : params.pageNo,
-      pageSize: useLocalFilter ? 500 : params.pageSize
+      pageNo: params.pageNo,
+      pageSize: params.pageSize
     }
   })
+}
 
-  const mapped = (data.list || []).map(mapStock)
-  const filtered = mapped.filter((item) => matchesStockStatus(item, params.stockStatus))
+const fetchAllSpuRecords = async (goodsName?: string) => {
+  const batchSize = 200
+  const firstPage = await fetchSpuPage({
+    goodsName,
+    pageNo: 1,
+    pageSize: batchSize
+  })
 
-  if (!useLocalFilter) {
+  const total = Number(firstPage.total || 0)
+  const list = [...(firstPage.list || [])]
+
+  if (total <= list.length) {
+    return list
+  }
+
+  const totalPages = Math.ceil(total / batchSize)
+  for (let pageNo = 2; pageNo <= totalPages; pageNo += 1) {
+    const pageData = await fetchSpuPage({
+      goodsName,
+      pageNo,
+      pageSize: batchSize
+    })
+    list.push(...(pageData.list || []))
+  }
+
+  return list
+}
+
+// 查询库存分页
+export const getStockPage = async (params: StockPageReqVO) => {
+  if (params.stockStatus === undefined) {
+    const data = await fetchSpuPage({
+      goodsName: params.goodsName,
+      pageNo: params.pageNo,
+      pageSize: params.pageSize
+    })
+
     return {
-      list: filtered,
+      list: (data.list || []).map(mapStock),
       total: data.total || 0
     }
   }
-  const start = (params.pageNo - 1) * params.pageSize
+
+  const allRecords = await fetchAllSpuRecords(params.goodsName)
+  const filtered = allRecords.map(mapStock).filter((item) => matchesStockStatus(item, params.stockStatus))
+  const { start, end } = getPageBounds(params.pageNo, params.pageSize)
+
   return {
-    list: filtered.slice(start, start + params.pageSize),
+    list: filtered.slice(start, end),
     total: filtered.length
   }
 }

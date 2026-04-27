@@ -8,13 +8,13 @@
 
     <el-card class="search-card">
       <el-form ref="queryFormRef" :inline="true" :model="queryParams" class="search-form">
-        <el-form-item label="会员昵称">
+        <el-form-item label="会员昵称" prop="nickname">
           <el-input v-model="queryParams.nickname" placeholder="请输入会员昵称" clearable />
         </el-form-item>
-        <el-form-item label="手机号">
+        <el-form-item label="手机号" prop="phone">
           <el-input v-model="queryParams.phone" placeholder="请输入手机号" clearable />
         </el-form-item>
-        <el-form-item label="会员等级">
+        <el-form-item label="会员等级" prop="levelId">
           <el-select v-model="queryParams.levelId" placeholder="请选择会员等级" clearable>
             <el-option
               v-for="item in levelOptions"
@@ -64,8 +64,8 @@
         :total="total"
         :page-sizes="[10, 20, 50, 100]"
         layout="total, sizes, prev, pager, next, jumper"
-        @size-change="handleQuery"
-        @current-change="handleQuery"
+        @size-change="handlePageSizeChange"
+        @current-change="handlePageChange"
       />
     </el-card>
   </div>
@@ -94,7 +94,7 @@ const queryParams = reactive<MemberPageReqVO>({
   pageSize: 10
 })
 
-const { loading, tableData, total, getList, handleQuery, handleReset } = useTable({
+const { loading, tableData, total, getList, handleQuery, handlePageChange, handlePageSizeChange, handleReset } = useTable({
   fetchData: MemberApi.getMemberPage,
   queryParams
 })

@@ -24,8 +24,25 @@ interface BackendCategoryVO {
   sort?: number
   status?: number
   description?: string
-  createTime?: string
+  createTime?: string | number
   children?: BackendCategoryVO[]
+}
+
+const formatDateTime = (value?: string | number) => {
+  if (value === undefined || value === null || value === '') {
+    return ''
+  }
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return String(value)
+  }
+  const yyyy = date.getFullYear()
+  const mm = `${date.getMonth() + 1}`.padStart(2, '0')
+  const dd = `${date.getDate()}`.padStart(2, '0')
+  const hh = `${date.getHours()}`.padStart(2, '0')
+  const mi = `${date.getMinutes()}`.padStart(2, '0')
+  const ss = `${date.getSeconds()}`.padStart(2, '0')
+  return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}`
 }
 
 const mapToView = (item: BackendCategoryVO): CategoryVO => ({
@@ -35,8 +52,8 @@ const mapToView = (item: BackendCategoryVO): CategoryVO => ({
   icon: item.picUrl || '',
   sort: Number(item.sort || 0),
   status: Number(item.status ?? 0),
-  createTime: item.createTime,
-  children: (item.children || []).map(mapToView)
+  createTime: formatDateTime(item.createTime),
+  children: []
 })
 
 const mapToBackend = (data: CategoryVO) => ({
@@ -49,11 +66,76 @@ const mapToBackend = (data: CategoryVO) => ({
   description: ''
 })
 
+const flattenBackendCategories = (items: BackendCategoryVO[]): BackendCategoryVO[] => {
+  return items.reduce<BackendCategoryVO[]>((acc, item) => {
+    acc.push({
+      ...item,
+      children: undefined
+    })
+    if (item.children?.length) {
+      acc.push(...flattenBackendCategories(item.children))
+    }
+    return acc
+  }, [])
+}
+
+const sortCategoryTree = (items: CategoryVO[]) => {
+  items.sort((a, b) => {
+    const sortDiff = Number(a.sort || 0) - Number(b.sort || 0)
+    if (sortDiff !== 0) {
+      return sortDiff
+    }
+    return Number(a.id || 0) - Number(b.id || 0)
+  })
+  items.forEach((item) => {
+    if (item.children?.length) {
+      sortCategoryTree(item.children)
+    }
+  })
+  return items
+}
+
+const buildCategoryTree = (list: CategoryVO[]) => {
+  const nodeMap = new Map<number, CategoryVO>()
+  const roots: CategoryVO[] = []
+
+  list.forEach((item) => {
+    if (!item.id) {
+      roots.push(item)
+      return
+    }
+    nodeMap.set(item.id, {
+      ...item,
+      children: []
+    })
+  })
+
+  list.forEach((item) => {
+    if (!item.id) {
+      return
+    }
+    const current = nodeMap.get(item.id)
+    if (!current) {
+      return
+    }
+    const parentId = Number(item.parentId || 0)
+    const parent = parentId ? nodeMap.get(parentId) : undefined
+    if (!parent) {
+      roots.push(current)
+      return
+    }
+    parent.children = parent.children || []
+    parent.children.push(current)
+  })
+
+  return sortCategoryTree(roots)
+}
+
 export const getCategoryList = (params: CategoryPageReqVO) => {
   return request.get<BackendCategoryVO[]>({
     url: '/product/category/list',
     params
-  }).then((list) => (list || []).map(mapToView))
+  }).then((list) => buildCategoryTree(flattenBackendCategories(list || []).map(mapToView)))
 }
 
 export const getCategory = (id: number) => {

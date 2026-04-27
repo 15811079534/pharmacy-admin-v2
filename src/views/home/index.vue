@@ -160,6 +160,7 @@
 
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
+import type { Component } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   ShoppingCart,
@@ -167,6 +168,7 @@ import {
   User,
   Box,
   Goods,
+  CollectionTag,
   Tickets,
   Van,
   Bell,
@@ -175,6 +177,7 @@ import {
 import TrendChart from '@/components/TrendChart.vue'
 import { useUserStore } from '@/stores/user'
 import { getDashboardOverview, getDashboardTrend } from '@/api/dashboard'
+import { hasPermission } from '@/utils/permission'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -306,20 +309,39 @@ const salesRateClass = computed(() => {
   return salesDayRate.value >= 0 ? 'up' : 'down'
 })
 
-const quickActions = [
+interface QuickActionItem {
+  title: string
+  desc: string
+  path: string
+  icon: Component
+  tone: string
+  permission?: string
+}
+
+const quickActionItems: QuickActionItem[] = [
+  {
+    title: '药品分类',
+    desc: '维护分类目录与启停状态',
+    path: '/goods/category',
+    icon: CollectionTag,
+    tone: 'purple',
+    permission: 'product:category:query'
+  },
   {
     title: '药品信息',
     desc: '维护药品档案与上下架',
     path: '/goods/goods',
     icon: Goods,
-    tone: 'blue'
+    tone: 'blue',
+    permission: 'product:spu:query'
   },
   {
     title: '库存管理',
     desc: '处理入库、出库与预警',
     path: '/goods/stock',
     icon: Box,
-    tone: 'orange'
+    tone: 'orange',
+    permission: 'product:spu:query'
   },
   {
     title: '订单列表',
@@ -350,6 +372,10 @@ const quickActions = [
     tone: 'blue'
   }
 ]
+
+const quickActions = computed(() =>
+  quickActionItems.filter((item) => !item.permission || hasPermission(userStore.permissions, item.permission))
+)
 
 const go = (path: string) => {
   router.push(path)

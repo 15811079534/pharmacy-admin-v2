@@ -8,13 +8,17 @@
 
     <el-card class="search-card">
       <el-form ref="queryFormRef" :inline="true" :model="queryParams" class="search-form">
-        <el-form-item label="门店名称">
+        <el-form-item label="门店名称" prop="name">
           <el-input v-model="queryParams.name" placeholder="请输入门店名称" clearable />
         </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="queryParams.status" placeholder="请选择状态" clearable>
-            <el-option label="营业中" :value="0" />
-            <el-option label="休息中" :value="1" />
+        <el-form-item label="状态" prop="status">
+          <el-select v-model="queryParams.status" placeholder="请选择状态" clearable :empty-values="[null]">
+            <el-option
+              v-for="option in STORE_STATUS_OPTIONS"
+              :key="option.value"
+              :label="option.label"
+              :value="option.value"
+            />
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -39,8 +43,8 @@
         </el-table-column>
         <el-table-column prop="status" label="状态" width="100">
           <template #default="{ row }">
-            <el-tag :type="row.status === 0 ? 'success' : 'info'">
-              {{ row.status === 0 ? '营业中' : '休息中' }}
+            <el-tag :type="getStoreStatusMeta(row.status).tagType">
+              {{ getStoreStatusMeta(row.status).label }}
             </el-tag>
           </template>
         </el-table-column>
@@ -58,8 +62,8 @@
         :total="total"
         :page-sizes="[10, 20, 50, 100]"
         layout="total, sizes, prev, pager, next, jumper"
-        @size-change="handleQuery"
-        @current-change="handleQuery"
+        @size-change="handlePageSizeChange"
+        @current-change="handlePageChange"
       />
     </el-card>
   </div>
@@ -70,6 +74,7 @@ import { computed } from 'vue'
 import { useTable } from '@/hooks/useTable'
 import * as StoreApi from '@/api/pharmacy/store'
 import type { StorePageReqVO } from '@/api/pharmacy/store'
+import { getStoreStatusMeta, STORE_STATUS_OPTIONS } from '@/api/pharmacy/store'
 import PageHero from '@/components/PageHero.vue'
 import StoreForm from './StoreForm.vue'
 
@@ -83,7 +88,7 @@ const queryParams = reactive<StorePageReqVO>({
   pageSize: 10
 })
 
-const { loading, tableData, total, getList, handleQuery, handleReset } = useTable({
+const { loading, tableData, total, getList, handleQuery, handlePageChange, handlePageSizeChange, handleReset } = useTable({
   fetchData: StoreApi.getStorePage,
   queryParams
 })
@@ -105,13 +110,13 @@ const heroStats = computed(() => {
     },
     {
       label: '营业中',
-      value: tableData.value.filter((item) => item.status === 0).length,
+      value: tableData.value.filter((item) => item.status === 1).length,
       helper: '当前页',
       tone: 'success'
     },
     {
       label: '休息中',
-      value: tableData.value.filter((item) => item.status === 1).length,
+      value: tableData.value.filter((item) => item.status === 0).length,
       helper: '当前页',
       tone: 'warning'
     },

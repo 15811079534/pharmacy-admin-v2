@@ -24,7 +24,7 @@
         </el-col>
         <el-col :span="12">
           <el-form-item label="升级经验" prop="experience">
-            <el-input-number v-model="formData.experience" :min="1" style="width: 100%" />
+            <el-input-number v-model="formData.experience" :min="0" style="width: 100%" />
           </el-form-item>
         </el-col>
       </el-row>
@@ -79,7 +79,7 @@ const formRef = ref()
 const formData = ref<MemberLevelVO>({
   name: '',
   level: 1,
-  experience: 1,
+  experience: 0,
   discountPercent: 100,
   icon: '',
   backgroundUrl: '',
@@ -97,7 +97,7 @@ const formRules = {
   ],
   experience: [
     { required: true, message: '请输入升级经验', trigger: 'blur' },
-    { type: 'number', min: 1, message: '升级经验必须大于 0', trigger: 'blur' }
+    { type: 'number', min: 0, message: '升级经验不能小于 0', trigger: 'blur' }
   ],
   discountPercent: [
     { required: true, message: '请输入折扣', trigger: 'blur' },
@@ -136,7 +136,7 @@ const resetForm = () => {
   formData.value = {
     name: '',
     level: 1,
-    experience: 1,
+    experience: 0,
     discountPercent: 100,
     icon: '',
     backgroundUrl: '',

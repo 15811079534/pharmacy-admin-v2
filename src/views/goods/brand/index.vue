@@ -8,11 +8,11 @@
 
     <el-card class="search-card">
       <el-form ref="queryFormRef" :inline="true" :model="queryParams" class="search-form">
-        <el-form-item label="品牌名称">
+        <el-form-item label="品牌名称" prop="name">
           <el-input v-model="queryParams.name" placeholder="请输入品牌名称" clearable />
         </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="queryParams.status" placeholder="请选择状态" clearable>
+        <el-form-item label="状态" prop="status">
+          <el-select v-model="queryParams.status" placeholder="请选择状态" clearable :empty-values="[null]">
             <el-option label="启用" :value="0" />
             <el-option label="禁用" :value="1" />
           </el-select>
@@ -33,13 +33,15 @@
         <el-table-column prop="logo" label="品牌图片" width="120">
           <template #default="{ row }">
             <el-image
-              v-if="row.logo"
+              v-if="hasUsableLogo(row.logo)"
               :src="row.logo"
-              style="width: 70px; height: 40px; border-radius: 8px"
+              class="brand-logo-image"
               fit="cover"
               preview-teleported
             />
-            <span v-else class="muted-text">未上传</span>
+            <div v-else class="brand-logo-fallback">
+              {{ getBrandAvatarText(row.name) }}
+            </div>
           </template>
         </el-table-column>
         <el-table-column prop="name" label="品牌名称" min-width="180" />
@@ -67,8 +69,8 @@
         :total="total"
         :page-sizes="[10, 20, 50, 100]"
         layout="total, sizes, prev, pager, next, jumper"
-        @size-change="handleQuery"
-        @current-change="handleQuery"
+        @size-change="handlePageSizeChange"
+        @current-change="handlePageChange"
       />
     </el-card>
   </div>
@@ -92,10 +94,28 @@ const queryParams = reactive<BrandPageReqVO>({
   pageSize: 10
 })
 
-const { loading, tableData, total, getList, handleQuery, handleReset } = useTable({
+const { loading, tableData, total, getList, handleQuery, handlePageChange, handlePageSizeChange, handleReset } = useTable({
   fetchData: BrandApi.getBrandPage,
   queryParams
 })
+
+const hasUsableLogo = (logo?: string) => {
+  if (!logo) {
+    return false
+  }
+  return !logo.includes('vite.svg')
+}
+
+const getBrandAvatarText = (name?: string) => {
+  const value = (name || '').trim()
+  if (!value) {
+    return '品牌'
+  }
+  if (value.length <= 4) {
+    return value
+  }
+  return value.slice(0, 4)
+}
 
 const heroStats = computed(() => [
   {
@@ -159,5 +179,31 @@ onMounted(() => {
 <style scoped lang="scss">
 .muted-text {
   color: #8fa6b2;
+}
+
+.brand-logo-image,
+.brand-logo-fallback {
+  width: 70px;
+  height: 40px;
+  border-radius: 8px;
+}
+
+.brand-logo-image {
+  display: block;
+  border: 1px solid rgba(19, 164, 194, 0.12);
+}
+
+.brand-logo-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+  background: linear-gradient(135deg, rgba(28, 173, 199, 0.16), rgba(24, 124, 189, 0.24));
+  color: #1f5f7a;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-align: center;
+  line-height: 1.2;
 }
 </style>

@@ -53,7 +53,7 @@
             <span>医疗业务</span>
           </template>
           <el-menu-item v-if="canPrescription" index="/pharmacy/prescription">处方管理</el-menu-item>
-          <el-menu-item v-if="canStore" index="/pharmacy/store">门店管理</el-menu-item>
+          <el-menu-item index="/pharmacy/store">门店管理</el-menu-item>
           <el-menu-item index="/pharmacy/insurance">医保管理</el-menu-item>
         </el-sub-menu>
 
@@ -117,9 +117,6 @@ const canOrderExpress = computed(() =>
 )
 const canPrescription = computed(() =>
   hasPermission(userStore.permissions, 'trade:prescription:query')
-)
-const canStore = computed(() =>
-  hasPermission(userStore.permissions, 'trade:pharmacy-store:query')
 )
 const canMemberList = computed(() => hasPermission(userStore.permissions, 'member:user:query'))
 const canMemberLevel = computed(() => hasPermission(userStore.permissions, 'member:level:query'))

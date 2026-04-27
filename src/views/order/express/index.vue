@@ -8,14 +8,14 @@
 
     <el-card class="search-card">
       <el-form ref="queryFormRef" :inline="true" :model="queryParams" class="search-form">
-        <el-form-item label="公司编码">
+        <el-form-item label="公司编码" prop="code">
           <el-input v-model="queryParams.code" placeholder="请输入公司编码" clearable />
         </el-form-item>
-        <el-form-item label="公司名称">
+        <el-form-item label="公司名称" prop="name">
           <el-input v-model="queryParams.name" placeholder="请输入公司名称" clearable />
         </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="queryParams.status" placeholder="请选择状态" clearable>
+        <el-form-item label="状态" prop="status">
+          <el-select v-model="queryParams.status" placeholder="请选择状态" clearable :empty-values="[null]">
             <el-option label="启用" :value="0" />
             <el-option label="禁用" :value="1" />
           </el-select>
@@ -38,11 +38,15 @@
             <el-image
               v-if="row.logo"
               :src="row.logo"
-              style="width: 70px; height: 40px; border-radius: 8px"
+              class="logo-image"
               fit="cover"
               preview-teleported
-            />
-            <span v-else class="muted-text">未上传</span>
+            >
+              <template #error>
+                <div class="logo-fallback">{{ getLogoText(row) }}</div>
+              </template>
+            </el-image>
+            <div v-else class="logo-fallback">{{ getLogoText(row) }}</div>
           </template>
         </el-table-column>
         <el-table-column prop="code" label="公司编码" width="150" />
@@ -70,8 +74,8 @@
         :total="total"
         :page-sizes="[10, 20, 50, 100]"
         layout="total, sizes, prev, pager, next, jumper"
-        @size-change="handleQuery"
-        @current-change="handleQuery"
+        @size-change="handlePageSizeChange"
+        @current-change="handlePageChange"
       />
     </el-card>
   </div>
@@ -96,7 +100,7 @@ const queryParams = reactive<ExpressPageReqVO>({
   pageSize: 10
 })
 
-const { loading, tableData, total, getList, handleQuery, handleReset } = useTable({
+const { loading, tableData, total, getList, handleQuery, handlePageChange, handlePageSizeChange, handleReset } = useTable({
   fetchData: ExpressApi.getExpressPage,
   queryParams
 })
@@ -121,12 +125,21 @@ const heroStats = computed(() => [
     tone: 'warning'
   },
   {
-    label: '缺 Logo',
-    value: tableData.value.filter((item) => !item.logo).length,
-    helper: '当前页',
+    label: '编码已维护',
+    value: tableData.value.filter((item) => item.code).length,
+    helper: '当前页公司',
     tone: 'info'
   }
 ])
+
+const getLogoText = (row: { name?: string; code?: string }) => {
+  const name = String(row.name || '').trim()
+  if (name) {
+    return name.slice(0, 2)
+  }
+  const code = String(row.code || '').trim()
+  return code.slice(0, 4).toUpperCase() || 'LOGO'
+}
 
 const handleAdd = () => {
   formRef.value?.openDialog('create')
@@ -163,5 +176,24 @@ onMounted(() => {
 <style scoped lang="scss">
 .muted-text {
   color: #8fa6b2;
+}
+
+.logo-image,
+.logo-fallback {
+  width: 70px;
+  height: 40px;
+  border-radius: 8px;
+}
+
+.logo-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #eef6ff 0%, #dbeafe 100%);
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  border: 1px solid #bfdbfe;
 }
 </style>

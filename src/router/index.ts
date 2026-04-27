@@ -97,7 +97,7 @@ export const constantRoutes: RouteRecordRaw[] = [
         path: 'pharmacy/store',
         name: 'PharmacyStore',
         component: () => import('@/views/pharmacy/store/index.vue'),
-        meta: { title: '门店管理', permission: 'trade:pharmacy-store:query' }
+        meta: { title: '门店管理' }
       },
       {
         path: 'pharmacy/insurance',

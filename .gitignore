@@ -11,6 +11,8 @@ node_modules
 dist
 dist-ssr
 *.local
+seed-e2e-summary-*.json
+seed-e2e-api-only-summary-*.json
 
 # Editor directories and files
 .vscode/*

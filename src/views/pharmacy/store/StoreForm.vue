@@ -35,8 +35,8 @@
       </el-form-item>
       <el-form-item label="状态" prop="status">
         <el-radio-group v-model="formData.status">
-          <el-radio :value="0">营业中</el-radio>
-          <el-radio :value="1">休息中</el-radio>
+          <el-radio :value="1">营业中</el-radio>
+          <el-radio :value="0">休息中</el-radio>
         </el-radio-group>
       </el-form-item>
     </el-form>
@@ -67,7 +67,7 @@ const formData = ref<StoreVO>({
   phone: '',
   businessHours: '',
   deliveryRadius: 3,
-  status: 0
+  status: 1
 })
 
 const formRules = {
@@ -126,7 +126,7 @@ const resetForm = () => {
     phone: '',
     businessHours: '',
     deliveryRadius: 3,
-    status: 0
+    status: 1
   }
   formRef.value?.resetFields()
 }

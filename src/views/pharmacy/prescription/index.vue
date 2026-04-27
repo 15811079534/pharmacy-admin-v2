@@ -8,14 +8,19 @@
 
     <el-card class="search-card">
       <el-form ref="queryFormRef" :inline="true" :model="queryParams" class="search-form">
-        <el-form-item label="处方编号">
+        <el-form-item label="处方编号" prop="prescriptionNo">
           <el-input v-model="queryParams.prescriptionNo" placeholder="请输入处方编号" clearable />
         </el-form-item>
-        <el-form-item label="用户ID">
+        <el-form-item label="用户ID" prop="userId">
           <el-input v-model.number="queryParams.userId" placeholder="请输入用户ID" clearable />
         </el-form-item>
-        <el-form-item label="审核状态">
-          <el-select v-model="queryParams.status" placeholder="请选择审核状态" clearable>
+        <el-form-item label="审核状态" prop="status">
+          <el-select
+            v-model="queryParams.status"
+            placeholder="请选择审核状态"
+            clearable
+            :empty-values="[null]"
+          >
             <el-option label="待审核" :value="0" />
             <el-option label="审核通过" :value="1" />
             <el-option label="审核拒绝" :value="2" />
@@ -23,7 +28,7 @@
         </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="handleQuery">查询</el-button>
-          <el-button @click="() => handleReset(() => queryFormRef.resetFields())">重置</el-button>
+          <el-button @click="handleResetQuery">重置</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -60,8 +65,22 @@
         <el-table-column label="操作" width="250" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="handleDetail(row)">详情</el-button>
-            <el-button v-if="row.status === 0" link type="success" @click="handleApprove(row)">通过</el-button>
-            <el-button v-if="row.status === 0" link type="danger" @click="handleReject(row)">拒绝</el-button>
+            <el-button
+              v-if="row.status === 0 && canAudit"
+              link
+              type="success"
+              @click="handleApprove(row)"
+            >
+              通过
+            </el-button>
+            <el-button
+              v-if="row.status === 0 && canAudit"
+              link
+              type="danger"
+              @click="handleReject(row)"
+            >
+              拒绝
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -72,8 +91,8 @@
         :total="total"
         :page-sizes="[10, 20, 50, 100]"
         layout="total, sizes, prev, pager, next, jumper"
-        @size-change="handleQuery"
-        @current-change="handleQuery"
+        @size-change="handlePageSizeChange"
+        @current-change="handlePageChange"
       />
     </el-card>
   </div>
@@ -84,11 +103,14 @@ import { computed } from 'vue'
 import { useTable } from '@/hooks/useTable'
 import * as PrescriptionApi from '@/api/pharmacy/prescription'
 import type { PrescriptionPageReqVO } from '@/api/pharmacy/prescription'
+import { useUserStore } from '@/stores/user'
+import { hasPermission } from '@/utils/permission'
 import PageHero from '@/components/PageHero.vue'
 import PrescriptionDetail from './PrescriptionDetail.vue'
 
 const queryFormRef = ref()
 const detailRef = ref()
+const userStore = useUserStore()
 
 const queryParams = reactive<PrescriptionPageReqVO>({
   prescriptionNo: '',
@@ -98,10 +120,14 @@ const queryParams = reactive<PrescriptionPageReqVO>({
   pageSize: 10
 })
 
-const { loading, tableData, total, getList, handleQuery, handleReset } = useTable({
+const { loading, tableData, total, getList, handleQuery, handlePageChange, handlePageSizeChange } = useTable({
   fetchData: PrescriptionApi.getPrescriptionPage,
   queryParams
 })
+
+const canAudit = computed(() =>
+  hasPermission(userStore.permissions, 'trade:prescription:audit')
+)
 
 const heroStats = computed(() => [
   {
@@ -132,6 +158,14 @@ const heroStats = computed(() => [
 
 const handleDetail = (row: any) => {
   detailRef.value?.open(row.id)
+}
+
+const handleResetQuery = () => {
+  queryFormRef.value?.resetFields()
+  queryParams.prescriptionNo = ''
+  queryParams.userId = undefined
+  queryParams.status = undefined
+  handleQuery()
 }
 
 const handleApprove = async (row: any) => {

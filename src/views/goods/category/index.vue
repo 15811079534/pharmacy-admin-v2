@@ -12,7 +12,7 @@
           <el-input v-model="queryParams.name" placeholder="请输入分类名称" clearable />
         </el-form-item>
         <el-form-item label="状态">
-          <el-select v-model="queryParams.status" placeholder="请选择状态" clearable>
+          <el-select v-model="queryParams.status" placeholder="请选择状态" clearable :empty-values="[null]">
             <el-option label="启用" :value="0" />
             <el-option label="禁用" :value="1" />
           </el-select>
@@ -37,7 +37,15 @@
         <el-table-column prop="name" label="分类名称" width="200" />
         <el-table-column prop="icon" label="图标" width="100">
           <template #default="{ row }">
-            <el-image v-if="row.icon" :src="row.icon" style="width: 40px; height: 40px" fit="cover" />
+            <el-image
+              v-if="hasUsableIcon(row.icon)"
+              :src="row.icon"
+              class="category-icon-image"
+              fit="cover"
+            />
+            <div v-else class="category-icon-fallback">
+              {{ getCategoryAvatarText(row.name) }}
+            </div>
           </template>
         </el-table-column>
         <el-table-column prop="sort" label="排序" width="100" />
@@ -77,6 +85,24 @@ const queryParams = reactive<CategoryPageReqVO>({
 const tableData = ref<CategoryVO[]>([])
 const loading = ref(false)
 const formRef = ref()
+
+const hasUsableIcon = (icon?: string) => {
+  if (!icon) {
+    return false
+  }
+  return !icon.includes('vite.svg')
+}
+
+const getCategoryAvatarText = (name?: string) => {
+  const value = (name || '').trim()
+  if (!value) {
+    return '分类'
+  }
+  if (value.length <= 2) {
+    return value
+  }
+  return value.slice(0, 2)
+}
 
 const flattenCategories = (list: CategoryVO[]): CategoryVO[] => {
   return list.reduce<CategoryVO[]>((acc, item) => {
@@ -168,3 +194,28 @@ onMounted(() => {
   handleQuery()
 })
 </script>
+
+<style scoped lang="scss">
+.category-icon-image,
+.category-icon-fallback {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+}
+
+.category-icon-image {
+  display: block;
+  border: 1px solid rgba(19, 164, 194, 0.12);
+}
+
+.category-icon-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(28, 173, 199, 0.16), rgba(24, 124, 189, 0.24));
+  color: #1f5f7a;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+</style>

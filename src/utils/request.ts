@@ -1,6 +1,7 @@
 import axios from 'axios'
 import type { AxiosInstance, AxiosResponse, AxiosError } from 'axios'
 import { ElMessageBox } from 'element-plus'
+import { normalizeQueryParamDates } from '@/utils/query'
 
 export interface RequestError extends Error {
   code?: number
@@ -41,6 +42,11 @@ service.interceptors.request.use(
     const token = localStorage.getItem('token')
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`
+    }
+
+    // Axios 会把 Date 查询参数序列化成 UTC ISO 字符串，Spring 的 LocalDateTime 绑定会失败。
+    if (config.params) {
+      config.params = normalizeQueryParamDates(config.params)
     }
     return config
   },
